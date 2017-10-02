@@ -21,9 +21,14 @@ function choice(choices, count) {
   ];
 }
 
+function sigmoid(t) {
+    return 1/(1+Math.pow(Math.E, -t));
+}
+
 module.exports = {
   "math": math,
   "getDerivative": getDerivative,
   "one_or_zero": one_or_zero,
-  "choice": choice
+  "choice": choice,
+  "sigmoid": sigmoid
 };

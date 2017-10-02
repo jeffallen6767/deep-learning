@@ -1,8 +1,10 @@
 var 
+  helpers = require("../helpers.js"),
+  one_or_zero = helpers.one_or_zero,
   neuralNetwork = require("./index.js"),
   data = {
     "XOR neural network": {
-      "rounds": 10000,
+      "rounds": 1,//10000
       "training_data": [
         [[0,0,1], [0]],
         [[0,1,1], [1]],
@@ -18,7 +20,7 @@ function test() {
       obj = data[key],
       rounds = obj.rounds,
       training_data = obj.training_data,
-      node = neuralNetwork(rounds, training_data);
+      node = neuralNetwork(rounds, training_data);//<-- you are here
     // see if the node computes correctly:
     console.log(key);
     training_data.forEach(function(set, idx) {
@@ -30,8 +32,8 @@ function test() {
     console.log(" ");
   });
 }
-//test();
-
+test();
+/* TODO
 function getTests() {
   var tests = {};
   Object.keys(data).forEach(function(key) {
@@ -58,7 +60,7 @@ function getTests() {
   });
   return tests;
 }
-
+*/
 module.exports = {
   "test": test,
   //"getTests": getTests

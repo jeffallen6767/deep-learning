@@ -3,16 +3,49 @@
 
 var
   helpers = require("../helpers.js"),
-  one_or_zero = helpers.one_or_zero;
+  math = helpers.math,
+  one_or_zero = helpers.one_or_zero,
+  sigmoid = helpers.sigmoid;
+
+/*
+Three-by-two array of random numbers from [-5, 0):
+>>> 5 * np.random.random_sample((3, 2)) - 5
+array([[-3.99149989, -0.52338984],
+       [-2.99091858, -0.79479508],
+       [-1.23204345, -1.75224494]])
+*/
+function rand(y, x, size, adjust) {
+  var result = [],
+    i,j,k,m;
+  for (i=0; i<y; i++) {
+    k = [];
+    for (j=0; j<x; j++) {
+      m = Math.random();
+      if (size) {
+        m *= size;
+      }
+      if (adjust) {
+        m += adjust;
+      }
+      k.push(m);
+    }
+    result.push(k);
+  }
+  return result;
+}
+//console.log(rand(3,2,5,-5));
 
 function matrixMultiply(one, two, debug) {
+  if (debug) {
+    console.log("matrixMultiply", one, two);
+  }
   var
-    oneRows = one.length,
+    oneRows = one.length, // 4
     rowOne = one[0],
-    oneCols = rowOne.length,
-    twoRows = two.length,
+    oneCols = rowOne.length, // 3
+    twoRows = two.length, // 3
     rowTwo = two[0],
-    twoCols = rowTwo.length,
+    twoCols = rowTwo.length, // 4
     result = [],
     i,j,k,
     x,y,z,w;
@@ -38,11 +71,227 @@ function matrixMultiply(one, two, debug) {
     result.push(x);
   }
   if (debug) {
-    //console.log("matrixMultiply", one, two, result);
+    console.log("matrixMultiply-result", result);
   }
   return result;
 }
 
+function matrixVectorMultiply(one, two, debug) {
+  if (debug) {
+    console.log("matrixVectorMultiply", one, two);
+  }
+  var 
+    rows = one.length,
+    cols,
+    result = [],
+    i,j,
+    u,v,w,
+    x,y,z;
+  for (i=0; i<rows; i++) {
+    x = one[i];
+    cols = x.length;
+    z = 0;
+    for (j=0; j<cols; j++) {
+      u = x[j];
+      v = two[j];
+      v = Array.isArray(v) ? v[0] : v;
+      w = u * v;
+      z += w;
+      //console.log(i, j, u, v, w, z);
+    }
+    result.push(z);
+  }
+  if (debug) {
+    console.log("matrixVectorMultiply-result", result);
+  }
+  return result;
+}
+
+function scalarSigmoid(val) {
+  return 1 / (1 + Math.exp(-val));
+}
+
+function vectorSigmoid(vector) {
+  return vector.map(scalarSigmoid);
+}
+
+function matrixSigmoid(matrix) {
+  return matrix.map(vectorSigmoid);
+}
+
+function scalarDerivative(val) {
+  return val * (1-val);
+}
+
+function vectorDerivative(vector) {
+  return vector.map(scalarDerivative);
+}
+
+function matrixDerivative(matrix) {
+  return matrix.map(vectorDerivative);
+}
+
+function diff(one, two, debug) {
+  if (debug) {
+    console.log("diff", one, two);
+  }
+  var len = one.length,
+    result = [],
+    count,
+    row,
+    i,j,
+    z;
+  for (i=0; i<len; i++) {
+    row = one[i];
+    count = row.length;
+    z = [];
+    for (j=0; j<count; j++) {
+      z.push(
+        row[j] - two[i]
+      );
+    }
+    result.push(z);
+  }
+  if (debug) {
+    console.log("diff-result", result);
+  }
+  return result;
+}
+
+function mult(one, two, debug) {
+  if (debug) {
+    console.log("mult", one, two);
+  }
+  var len = one.length,
+    result = [],
+    i;
+  for (i=0; i<len; i++) {
+    result.push(
+      [one[i][0] * two[i]]
+    );
+  }
+  if (debug) {
+    console.log("mult-result", result);
+  }
+  return result;
+}
+
+function neuralNetwork(rounds, data) {
+  var
+    input = data.map(function(set) {
+      return set[0];
+    }),
+    inputLength = input.length,
+    inputexample = input[0],
+    inputsize = inputexample.length,
+    output = data.map(function(set) {
+      return set[1];
+    }),
+    outputLength = output.length,
+    outputexample = output[0],
+    outputsize = outputexample.length,
+    layer_1 = {
+      "_name": "Layer 1",
+      "weights": rand(inputsize, inputLength, 2, -1)
+    },
+    layer_2 = {
+      "_name": "Layer 2",
+      "weights": rand(inputLength, outputsize, 2, -1)
+    },
+    outWeight = function outWeight(label, weights) {
+      var
+        yLen = weights.length,
+        xLen = weights[0].length,
+        result = ["",label],
+        x,y,z;
+      
+      for (y=0; y<yLen; y++) {
+        x = weights[y];
+        result.push(
+          x.map(function(val) {
+            return val < 0 ? val : "+" + val;
+          }).join(", ")
+        );
+      }
+      result.push("");
+      return result.join("\n");
+    },
+    solve = function(x, debug) {
+      console.log("solve", x);
+
+      return 0;
+    },
+
+    i;
+  
+  //console.log(outWeight("input", input));
+  //console.log(outWeight("output", output));
+  
+  //console.log(outWeight("weights_0", weights_0));
+  //console.log(outWeight("weights_1", weights_1));
+  
+  for (i=0; i<rounds; i++) {
+    
+    layer_1.dot = matrixMultiply(input, layer_1.weights);
+    layer_1.sigmoid = matrixSigmoid(layer_1.dot);
+
+    layer_2.dot = matrixVectorMultiply(layer_1.sigmoid, layer_2.weights);
+    layer_2.sigmoid = vectorSigmoid(layer_2.dot);
+
+    layer_2.error = diff(output, layer_2.sigmoid);
+    layer_2.derivative = vectorDerivative(layer_2.sigmoid);
+    layer_2.delta = mult(layer_2.error, layer_2.derivative);
+
+    layer_1.error = matrixMultiply(layer_2.delta, layer_2.weights);
+    layer_1.derivative = matrixDerivative(layer_1.sigmoid);
+    layer_1.delta = matrixVectorMultiply(layer_1.derivative, layer_1.error);
+
+    layer_2.adjustment = matrixVectorMultiply(layer_1.sigmoid, layer_2.delta);
+    layer_2.weights = diff(layer_2.weights, layer_2.adjustment);
+
+    layer_1.adjustment = matrixVectorMultiply(input, layer_1.delta);
+    layer_1.weights = diff(layer_1.weights, layer_1.adjustment);
+
+  }
+  
+  console.log(" ");
+  console.log("layer_1");
+  console.log(layer_1);
+  console.log(" ");
+  console.log("layer_2");
+  console.log(layer_2);
+  console.log(" ");
+  
+  return {
+    "compute": solve
+  };
+}
+
+module.exports = neuralNetwork;
+
+/*
+
+    //////////////////
+    
+    layer_1_A,
+    layer_1_B, 
+    
+    layer_2_A,
+    layer_2_B,
+    
+    layer_1_deriv,
+    layer_2_deriv,
+    
+    layer_1_delta,
+    layer_2_delta,
+    
+    layer_1_error,
+    layer_2_error,
+    
+    adjustment_A,
+    adjustment_B,
+    
+    
 function nonlin(x, deriv, debug) {
   var result = deriv
     ? x.map(function(val) {
@@ -128,117 +377,22 @@ function add(one, two, debug) {
   return result;
 }
 
-function diff(one, two, debug) {
-  var len = one.length,
-    result = [],
-    i;
-  for (i=0; i<len; i++) {
-    result.push(
-      [one[i][0] - two[i][0]]
-    );
-  }
-  if (debug) {
-    //console.log("diff", one, two, result);
-  }
-  return result;
-}
+*/
 
-function mult(one, two, debug) {
-  var len = one.length,
-    result = [],
-    i;
-  for (i=0; i<len; i++) {
-    result.push(
-      [one[i][0] * two[i][0]]
-    );
-  }
-  if (debug) {
-    //console.log("mult", one, two, result);
-  }
-  return result;
-}
 
 /*
-Three-by-two array of random numbers from [-5, 0):
->>> 5 * np.random.random_sample((3, 2)) - 5
-array([[-3.99149989, -0.52338984],
-       [-2.99091858, -0.79479508],
-       [-1.23204345, -1.75224494]])
-*/
-function rand(y, x, size, adjust) {
-  var result = [],
-    i,j,k,m;
-  for (i=0; i<y; i++) {
-    k = [];
-    for (j=0; j<x; j++) {
-      m = Math.random();
-      if (size) {
-        m *= size;
-      }
-      if (adjust) {
-        m += adjust;
-      }
-      k.push(m);
-    }
-    result.push(k);
-  }
-  return result;
-}
-//console.log(rand(3,2,5,-5));
-
-function neuralNetwork(rounds, data) {
-  var
-    input = data.map(function(set) {
-      return set[0];
-    }),
-    inputLength = input.length,
-    inputexample = input[0],
-    inputsize = inputexample.length,
-    output = data.map(function(set) {
-      return set[1];
-    }),
-    outputLength = output.length,
-    outputexample = output[0],
-    outputsize = outputexample.length,
-    /*
-    weights = inputexample.map(function(val) {
-      return 2 * Math.random() - 1;
-    }),
+    layer_2 = sigmoid(
+      dot(layer_1, weights_1)
+    );
+    console.log("layer_2", layer_2);
     */
-    weights_0 = rand(inputsize, inputLength, 2, -1),
-    weights_1 = rand(inputsize, outputsize, 2, -1),
-    calc = function(x, debug) {
-      return nonlin(
-        matrixVectorMultiply(x, weights, debug), null, debug
-      );
-    },
-    /*
-    solve = function(x, debug) {
-      return nonlin(
-        crossProduct(x, weights, debug)
-      );
-    },
-    */
-    solve = function(x, debug) {
-      //console.log("solve", x, weights.join(" "));
-      var q = matrixMultiply([x], weights, true);
-      //console.log("solve matrixMultiply", q);
-      //var r = nonlin(q);
-      //console.log("solve nonlin", r);
-      return q;
-    },
-    p,q,r,s,t,u,v,
-    i;
-  console.log(" ");
-  console.log("weights @ 0", weights.join(" "));
-  console.log(" ");
-  for (i=0; i<rounds; i++) {
     
+    /*
     // forward propagation 1
     q = matrixMultiply(input, weights_0);
-    //console.log(i, "q", q.join(" "));
+    console.log(i, "q", q.join(" "));
     r = nonlin(q, false);
-    //console.log(i, "r", r.join(" "));
+    console.log(i, "r", r.join(" "));
     
     // forward propagation 2
     q1 = matrixMultiply(r, weights_1);
@@ -267,7 +421,7 @@ function neuralNetwork(rounds, data) {
     weights = add(weights, v);
     //console.log(i, "weights", weights.join(" "));
     //console.log(" ");
-    /*
+    
     // forward propagation
     q = calc(input);
     //console.log(i, "q", q);
@@ -294,13 +448,4 @@ function neuralNetwork(rounds, data) {
     //+= dot(input, t);
     //console.log(" ");
     */
-  }
-  console.log(" ");
-  console.log("weights @", rounds, weights.join(" "));
-  console.log(" ");
-  return {
-    "compute": solve
-  };
-}
-
-module.exports = neuralNetwork;
+    
